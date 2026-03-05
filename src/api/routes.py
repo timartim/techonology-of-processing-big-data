@@ -1,6 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from .schemas import PredictResponse
-import numpy as np
+from io import BytesIO
+from PIL import Image
 
 router = APIRouter()
 
@@ -16,8 +17,6 @@ async def predict(file: UploadFile = File(...)):
     data = await file.read()
     svc = get_service()
 
-    from io import BytesIO
-    from PIL import Image
 
     img = Image.open(BytesIO(data)).convert("RGB")
     emb = svc.embed_pil(img).reshape(1, -1)
