@@ -27,7 +27,7 @@ jobs:
         run: |
           docker compose up -d --remove-orphans
           docker compose ps
-          docker compose logs --no-color --tail 900
+          docker compose logs -f --no-color
 
       - name: Stop container
         if: always()
