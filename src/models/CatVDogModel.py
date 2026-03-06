@@ -230,26 +230,15 @@ class CatVDogModel:
         return clf.predict(emb.reshape(1, -1))
 
     @torch.no_grad()
-    def predict_bytes(
-        self,
-        image_bytes: bytes,
-        classifier: Optional[Any] = None,
-        device: Optional[Union[str, torch.device]] = None,
-    ) -> Any:
-        from io import BytesIO
-
-        img = Image.open(BytesIO(image_bytes)).convert("RGB")
-        return self.predict_pil(img, classifier=classifier, device=device)
-
     def predict_dir(
-        self,
-        dir_image_path: PathLike,
-        classifier: Optional[Any] = None,
-        device: Optional[Union[str, torch.device]] = None,
-        exts: Sequence[str] = (".jpg", ".jpeg", ".png", ".webp", ".bmp"),
-        recursive: bool = False,
-        return_paths: bool = False,
-        skip_errors: bool = True,
+            self,
+            dir_image_path: PathLike,
+            classifier: Optional[Any] = None,
+            device: Optional[Union[str, torch.device]] = None,
+            exts: Sequence[str] = (".jpg", ".jpeg", ".png", ".webp", ".bmp"),
+            recursive: bool = False,
+            return_paths: bool = False,
+            skip_errors: bool = True,
     ) -> Union[np.ndarray, Dict[str, Any]]:
         clf = self._ensure_ready(classifier)
         dir_path = Path(dir_image_path)
@@ -265,7 +254,7 @@ class CatVDogModel:
         paths: List[str] = []
         errors: Dict[str, str] = {}
 
-        for p in files:
+        for p in tqdm(files, desc="Predicting images", unit="img"):
             try:
                 pred = self.predict_path(p, classifier=clf, device=device)
                 preds.append(pred[0] if isinstance(pred, (list, np.ndarray)) and len(pred) == 1 else pred)

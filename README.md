@@ -1,4 +1,4 @@
-# Cat V dogs
+# Cat V Dogs
 
 This repository contains a simple **Machine Learning Engineering pipeline** for binary image classification (**cats vs dogs**).  
 The system includes model training, inference API, experiment tracking, Docker deployment, and CI/CD pipelines.
@@ -14,7 +14,7 @@ The model classifies images into two classes:
 
 Architecture:
 
-```
+```text
 Image
    ↓
 ShuffleNet V2 (feature extractor)
@@ -23,7 +23,7 @@ Embedding vector
    ↓
 Logistic Regression
    ↓
-Probability of "dog"
+Probability / class prediction
 ```
 
 Key components:
@@ -42,8 +42,8 @@ Key components:
 Clone repository:
 
 ```bash
-git clone https://github.com/<your_repo>/mle-template.git
-cd mle-template
+git clone https://github.com/timartim/techonology-of-processing-big-data.git
+cd techonology-of-processing-big-data
 ```
 
 Create virtual environment:
@@ -65,38 +65,47 @@ pip install -r requirements.txt
 
 The model expects images named in the following format:
 
-```
+```text
 cat.123.jpg
 dog.456.jpg
 ```
 
-Class is inferred from filename prefix.
+Class is inferred from the filename prefix.
 
 Example dataset structure:
 
-```
+```text
 data/
-    cat.1.jpg
-    cat.2.jpg
-    dog.1.jpg
-    dog.2.jpg
+    train/
+        cat.1.jpg
+        cat.2.jpg
+        dog.1.jpg
+        dog.2.jpg
 ```
 
 ---
 
 # CLI Usage
 
-The application provides a CLI interface for:
+The model CLI is implemented in:
 
-- training models
-- running inference
-- batch prediction
+```text
+src/models/CatVDogModel.py
+```
+
+It should be run as a Python module.
 
 General command:
 
 ```bash
-python main.py --mode <mode> --path <path>
+python -m src.models.CatVDogModel --mode <mode> --path <path>
 ```
+
+Available modes:
+
+- `train` — train classifier on a dataset
+- `single` — predict one image
+- `directory` — predict all images in a folder
 
 ---
 
@@ -105,53 +114,65 @@ python main.py --mode <mode> --path <path>
 Train model on a dataset:
 
 ```bash
-python main.py \
+python -m src.models.CatVDogModel \
     --mode train \
     --path data/train \
     --device cpu
 ```
 
-Optional parameters:
+Example with additional parameters:
 
 ```bash
---data_frac 0.25
---test_size 0.2
---seed 42
---experiments_dir experiments
---best_dir experiments
+python -m src.models.CatVDogModel \
+    --mode train \
+    --path data/train \
+    --device cpu \
+    --data_frac 0.25 \
+    --test_size 0.2 \
+    --seed 42 \
+    --experiments_dir experiments \
+    --best_dir experiments \
+    --best_metric f1 \
+    --skip_errors
 ```
 
 Training will:
 
 - generate embeddings with ShuffleNet
+- split data into train and test
 - train Logistic Regression
 - compute metrics
 - save experiment artifacts
+- update the best model if the current one is better
 
 Artifacts created:
 
-```
+```text
 experiments/
     exp_0001_YYYY-MM-DD_HH-MM-SS/
         model.pkl
         report.json
 ```
 
-Best model is saved as:
+Best model files:
 
-```
-experiments/model.pkl
-experiments/model_metrics.json
+```text
+experiments/
+    model.pkl
+    model_metrics.json
 ```
 
 ---
 
 # Predict single image
 
+Run prediction for one image:
+
 ```bash
-python main.py \
+python -m src.models.CatVDogModel \
     --mode single \
-    --path image.jpg
+    --path data/sample/cat.1.jpg \
+    --device cpu
 ```
 
 Example output:
@@ -159,8 +180,8 @@ Example output:
 ```json
 {
   "mode": "single",
-  "path": "image.jpg",
-  "prediction": [1]
+  "path": "data/sample/cat.1.jpg",
+  "prediction": [0]
 }
 ```
 
@@ -171,17 +192,50 @@ Example output:
 Run predictions for all images in a directory:
 
 ```bash
-python main.py \
+python -m src.models.CatVDogModel \
     --mode directory \
-    --path images/
+    --path data/sample \
+    --device cpu
+```
+
+Example with optional flags:
+
+```bash
+python -m src.models.CatVDogModel \
+    --mode directory \
+    --path data/sample \
+    --device cpu \
+    --recursive \
+    --return_paths \
+    --skip_errors
 ```
 
 Optional flags:
 
-```bash
+- `--recursive` — search files recursively
+- `--return_paths` — return file paths with predictions
+- `--skip_errors` — skip unreadable or broken images
+
+---
+
+# CLI Arguments
+
+Supported CLI arguments:
+
+```text
+--model LOG_REG
+--device {cpu,cuda,mps}
+--mode {single,directory,train}
+--path <path>
 --recursive
 --return_paths
 --skip_errors
+--test_size <float>
+--seed <int>
+--data_frac <float>
+--experiments_dir <dir>
+--best_dir <dir>
+--best_metric {f1,accuracy,precision,recall}
 ```
 
 ---
@@ -198,13 +252,13 @@ uvicorn src.api:app --host 0.0.0.0 --port 8001
 
 Main endpoint:
 
-```
+```text
 POST /predict
 ```
 
 Request:
 
-```
+```text
 multipart/form-data
 file=<image>
 ```
@@ -227,7 +281,7 @@ Example response:
 
 Swagger documentation:
 
-```
+```text
 http://localhost:8001/docs
 ```
 
@@ -244,7 +298,13 @@ docker build -t catdog-api .
 Run container:
 
 ```bash
-docker run -p 8001:8001 catdog-api
+docker run -p 8001:8000 catdog-api
+```
+
+API will be available at:
+
+```text
+http://localhost:8001
 ```
 
 ---
@@ -257,15 +317,27 @@ Start service:
 docker compose up --build
 ```
 
+Run in background:
+
+```bash
+docker compose up -d --build
+```
+
+Stop service:
+
+```bash
+docker compose down
+```
+
 API will be available at:
 
-```
+```text
 http://localhost:8001
 ```
 
 Swagger:
 
-```
+```text
 http://localhost:8001/docs
 ```
 
@@ -277,7 +349,7 @@ CI/CD pipelines are implemented using **GitHub Actions**.
 
 Workflows:
 
-```
+```text
 .github/workflows/
     ci.yml
     cd.yml
@@ -285,19 +357,21 @@ Workflows:
 
 ### CI pipeline
 
-Runs on every commit:
+Runs on commits and pull requests:
 
 - builds Docker image
-- runs unit tests
+- runs tests
 - evaluates model metrics
+- validates application startup
 
 ### CD pipeline
 
-Runs after merge into `main` branch:
+Runs after merge into `main`:
 
-- pulls Docker image
-- launches API
-- runs functional API tests
+- builds and publishes Docker image
+- pulls the latest image
+- starts API container
+- runs functional API checks
 
 Example functional test:
 
@@ -307,7 +381,7 @@ curl -X POST -F "file=@dog.jpg" http://localhost:8001/predict
 
 Validation rule:
 
-```
+```text
 dog image  -> probability > 0.5
 cat image  -> probability < 0.5
 ```
@@ -316,7 +390,7 @@ cat image  -> probability < 0.5
 
 # DVC
 
-Data versioning is implemented with **DVC** and a remote storage.
+Data versioning is implemented with **DVC** and remote storage.
 
 Initialize DVC:
 
@@ -330,27 +404,10 @@ Pull dataset:
 dvc pull
 ```
 
----
+Push dataset:
 
-# Project Structure
-
-```
-.
-├── src
-│   ├── api.py
-│   ├── model.py
-│   └── logger.py
-│
-├── experiments
-│
-├── .github
-│   └── workflows
-│
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── config.ini
-└── README.md
+```bash
+dvc push
 ```
 
 ---
@@ -359,12 +416,12 @@ dvc pull
 
 Example metrics on validation set:
 
-| Metric | Score |
-|------|------|
-| Precision | 0.96 |
-| Recall | 0.97 |
-| F1 | 0.96 |
-| Accuracy | 0.96 |
+| Metric    | Score |
+|-----------|-------|
+| Precision | 0.96  |
+| Recall    | 0.97  |
+| F1        | 0.96  |
+| Accuracy  | 0.96  |
 
 ---
 
