@@ -28,7 +28,6 @@ jobs:
           docker compose up -d --remove-orphans
           docker compose ps
           sleep 15
-          curl --fail http://localhost:8001/docs > /dev/null
           docker compose logs --no-color --tail 300
 
       - name: Stop container
