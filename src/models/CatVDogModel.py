@@ -75,27 +75,29 @@ class CatVDogModel:
 
         cfg = self.config[section]
 
+        param_parsers = {
+            "max_iter": cfg.getint,
+            "C": cfg.getfloat,
+            "solver": cfg.get,
+            "penalty": cfg.get,
+            "random_state": cfg.getint,
+        }
+
         params: Dict[str, Any] = {}
-        if "max_iter" in cfg:
-            params["max_iter"] = cfg.getint("max_iter")
-        if "C" in cfg:
-            params["C"] = cfg.getfloat("C")
-        if "solver" in cfg:
-            params["solver"] = cfg.get("solver")
-        if "penalty" in cfg:
-            params["penalty"] = cfg.get("penalty")
+
+        for param, parser in param_parsers.items():
+            if param in cfg:
+                params[param] = parser(param)
+
         if "class_weight" in cfg:
             cw = cfg.get("class_weight")
             params["class_weight"] = None if cw.lower() == "none" else cw
-        if "random_state" in cfg:
-            params["random_state"] = cfg.getint("random_state")
 
         n_jobs = cfg.get("n_jobs", fallback=None)
         if n_jobs is not None:
             params["n_jobs"] = int(n_jobs)
 
         return params
-
     def _get_split_params(self) -> Dict[str, Any]:
         if "SPLIT" not in self.config:
             return {"test_size": 0.2, "random_state": 42, "stratify": True}
